@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Upcoming Events</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      color: #222;
+      padding: 20px;
+    }
+    .event {
+      background: white;
+      padding: 10px 15px;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .event h3 {
+      margin: 0;
+      font-size: 1.2em;
+      color: #800000;
+    }
+    .event time,
+    .event .location {
+      display: block;
+      margin-top: 5px;
+      font-size: 0.95em;
+    }
+  </style>
+</head>
+<body>
+  <h2>Upcoming Events</h2>
+  <div id="events">Loading...</div>
+
+  <script>
+    async function fetchICS() {
+      const icsUrl = 'https://your-netlify-app.netlify.app/cors-proxy/https://www.romeoville.org/common/modules/iCalendar/iCalendar.aspx?catID=61&feed=calendar'; // Replace with your proxy URL
+
+      try {
+        const response = await fetch(icsUrl);
+        const data = await response.text();
+
+        const events = [];
+        const entries = data.split('BEGIN:VEVENT').slice(1);
+
+        entries.forEach(entry => {
+          const summary = entry.match(/SUMMARY:(.*)/)?.[1]?.trim();
+          const location = entry.match(/LOCATION:(.*)/)?.[1]?.trim();
+          const dtstartRaw = entry.match(/DTSTART.*:(.*)/)?.[1]?.trim();
+          const dtendRaw = entry.match(/DTEND.*:(.*)/)?.[1]?.trim();
+
+          if (!summary || !dtstartRaw) return;
+
+          const dtstart = formatDateTime(dtstartRaw);
+          const dtend = formatDateTime(dtendRaw);
+
+          const startDateObj = parseDateTime(dtstartRaw);
+          if (startDateObj && startDateObj < new Date()) return; // filter past events
+
+          events.push({ summary, location, dtstart, dtend });
+        });
+
+        displayEvents(events);
+      } catch (err) {
+        document.getElementById('events').innerHTML = `<p>Error loading calendar: ${err.message}</p>`;
+      }
+    }
+
+    function formatDateTime(raw) {
+      const dt = parseDateTime(raw);
+      return dt.toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      });
+    }
+
+    function parseDateTime(raw) {
+      if (!raw) return null;
+      if (raw.length === 8) {
+        return new Date(`${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`);
+      } else {
+        return new Date(raw.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/, '$1-$2-$3T$4:$5'));
+      }
+    }
+
+    function displayEvents(events) {
+      const container = document.getElementById('events');
+      container.innerHTML = '';
+
+      const upcoming = events.slice(0, 10); // Limit to 10 upcoming events
+
+      if (upcoming.length === 0) {
+        container.innerHTML = '<p>No upcoming events found.</p>';
+        return;
+      }
+
+      upcoming.forEach(evt => {
+        const div = document.createElement('div');
+        div.className = 'event';
+        div.innerHTML = `
+          <h3>${evt.summary}</h3>
+          <time>${evt.dtstart} – ${evt.dtend}</time>
+          <div class="location">${evt.location || ''}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function scheduleMidnightReload() {
+      const now = new Date();
+      const midnight = new Date();
+      midnight.setHours(24, 0, 0, 0); // Next midnight
+      const msUntilMidnight = midnight.getTime() - now.getTime();
+
+      setTimeout(() => {
+        location.reload();
+      }, msUntilMidnight);
+    }
+
+    // Initial load
+    fetchICS();
+
+    // Refresh events every hour
+    setInterval(fetchICS, 60 * 60 * 1000);
+
+    // Reload full page at midnight
+    scheduleMidnightReload();
+  </script>
+</body>
+</html>
