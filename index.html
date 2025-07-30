@@ -66,15 +66,7 @@
           const dtstartRaw = entry.match(/DTSTART.*:(.*)/)?.[1]?.trim();
           const dtendRaw = entry.match(/DTEND.*:(.*)/)?.[1]?.trim();
 
-          console.log('Raw entry:', entry);
-          console.log('Summary:', summary);
-          console.log('Raw DTSTART:', dtstartRaw);
-          console.log('Raw DTEND:', dtendRaw);
-
-          if (!summary || !dtstartRaw || !parseDateTime(dtstartRaw)) {
-            console.warn('Skipping invalid event:', summary, dtstartRaw);
-            return;
-          }
+          if (!summary || !dtstartRaw || !parseDateTime(dtstartRaw)) return;
 
           const dtstart = formatDateTime(dtstartRaw);
           const dtend = formatDateTime(dtendRaw);
@@ -82,8 +74,11 @@
           const startDateObj = parseDateTime(dtstartRaw);
           if (startDateObj && startDateObj < new Date()) return;
 
-          events.push({ summary, location, dtstart, dtend });
+          events.push({ summary, location, dtstart, dtend, rawStart: dtstartRaw });
         });
+
+        // Sort events by raw start date
+        events.sort((a, b) => parseDateTimeRaw(a.rawStart) - parseDateTimeRaw(b.rawStart));
 
         displayEvents(events);
       } catch (err) {
@@ -107,6 +102,11 @@
 
       const dt = new Date(raw);
       return isNaN(dt) ? null : dt;
+    }
+
+    function parseDateTimeRaw(raw) {
+      const dt = parseDateTime(raw);
+      return dt ? dt.getTime() : 0;
     }
 
     function formatDateTime(raw) {
