@@ -66,6 +66,11 @@
           const dtstartRaw = entry.match(/DTSTART.*:(.*)/)?.[1]?.trim();
           const dtendRaw = entry.match(/DTEND.*:(.*)/)?.[1]?.trim();
 
+          console.log('Raw entry:', entry);
+          console.log('Summary:', summary);
+          console.log('Raw DTSTART:', dtstartRaw);
+          console.log('Raw DTEND:', dtendRaw);
+
           if (!summary || !dtstartRaw || !parseDateTime(dtstartRaw)) {
             console.warn('Skipping invalid event:', summary, dtstartRaw);
             return;
@@ -100,7 +105,8 @@
         return isNaN(dt) ? null : dt;
       }
 
-      return null;
+      const dt = new Date(raw);
+      return isNaN(dt) ? null : dt;
     }
 
     function formatDateTime(raw) {
