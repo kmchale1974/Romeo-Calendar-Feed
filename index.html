@@ -63,10 +63,20 @@
         entries.forEach(entry => {
           const summary = entry.match(/SUMMARY:(.*)/)?.[1]?.trim();
           const location = entry.match(/LOCATION:(.*)/)?.[1]?.trim();
-          const dtstartRaw = entry.match(/DTSTART.*:(.*)/)?.[1]?.trim();
-          const dtendRaw = entry.match(/DTEND.*:(.*)/)?.[1]?.trim();
 
-          if (!summary || !dtstartRaw || !parseDateTime(dtstartRaw)) return;
+          let dtstartRaw = entry.match(/DTSTART(;[^:]*)?:(.*)/);
+          let dtendRaw = entry.match(/DTEND(;[^:]*)?:(.*)/);
+          dtstartRaw = dtstartRaw ? dtstartRaw[2].trim() : null;
+          dtendRaw = dtendRaw ? dtendRaw[2].trim() : null;
+
+          console.log("Event:", summary);
+          console.log("Start Raw:", dtstartRaw);
+          console.log("End Raw:", dtendRaw);
+
+          if (!summary || !dtstartRaw || !parseDateTime(dtstartRaw)) {
+            console.warn("Skipping invalid event:", summary, dtstartRaw);
+            return;
+          }
 
           const dtstart = formatDateTime(dtstartRaw);
           const dtend = formatDateTime(dtendRaw);
@@ -77,9 +87,7 @@
           events.push({ summary, location, dtstart, dtend, rawStart: dtstartRaw });
         });
 
-        // Sort events by raw start date
         events.sort((a, b) => parseDateTimeRaw(a.rawStart) - parseDateTimeRaw(b.rawStart));
-
         displayEvents(events);
       } catch (err) {
         document.getElementById('events').innerHTML = `<p>Error loading calendar: ${err.message}</p>`;
