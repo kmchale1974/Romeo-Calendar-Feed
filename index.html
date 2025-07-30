@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Events</title>
+  <title>Romeoville Events</title>
   <style>
     html, body {
       margin: 0;
@@ -51,7 +51,7 @@
   <script>
     async function fetchICS() {
       const baseICSUrl = 'https://www.romeoville.org/common/modules/iCalendar/iCalendar.aspx?catID=62,42,40,23,24,25,26,44,48,37,27,46,43,64,63,39,36,47,29,60,61,14,31,59,58,32,33,34,45,38&feed=calendar';
-      const proxiedUrl = 'https://corsproxy.io/?' + encodeURIComponent(baseICSUrl);
+      const proxiedUrl = 'https://kmchale1974.github.io/Romeo-Calendar-Feed/cors-proxy/' + baseICSUrl;
 
       try {
         const response = await fetch(proxiedUrl);
@@ -69,14 +69,7 @@
           dtstartRaw = dtstartRaw ? dtstartRaw[2].trim() : null;
           dtendRaw = dtendRaw ? dtendRaw[2].trim() : null;
 
-          console.log("Event:", summary);
-          console.log("Start Raw:", dtstartRaw);
-          console.log("End Raw:", dtendRaw);
-
-          if (!summary || !dtstartRaw || !parseDateTime(dtstartRaw)) {
-            console.warn("Skipping invalid event:", summary, dtstartRaw);
-            return;
-          }
+          if (!summary || !dtstartRaw || !parseDateTime(dtstartRaw)) return;
 
           const dtstart = formatDateTime(dtstartRaw);
           const dtend = formatDateTime(dtendRaw);
