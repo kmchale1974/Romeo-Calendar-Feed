@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Romeoville Events Debug</title>
+  <title>Romeoville Events Deep Debug</title>
   <style>
     html, body {
       margin: 0;
@@ -56,25 +56,35 @@
         console.log("Fetching:", proxiedUrl);
         const response = await fetch(proxiedUrl);
         const text = await response.text();
-        console.log("Raw RSS Response:", text.slice(0, 500) + "...");
+        console.log("Raw RSS Response (first 500 chars):", text.slice(0, 500));
         const parser = new DOMParser();
         const xml = parser.parseFromString(text, "text/xml");
 
         const items = [...xml.querySelectorAll("item")];
         const events = [];
 
-        items.forEach(item => {
+        console.log(`Found ${items.length} items in feed.`);
+
+        items.forEach((item, index) => {
+          console.log(`\n=== ITEM ${index + 1} ===`);
+          console.log("Item raw XML:", item.outerHTML);
+
           const title = item.querySelector("title")?.textContent.trim();
           const description = item.querySelector("description")?.textContent.trim();
+          console.log("Title:", title);
+          console.log("Description:", description);
 
-          const dateMatch = description.match(/Event date:\s*([^<]+)/i);
-          const locationMatch = description.match(/Location:\s*([^<]+)/i);
+          const dateMatch = description?.match(/Event date:\s*([^<]+)/i);
+          const locationMatch = description?.match(/Location:\s*([^<]+)/i);
 
           const eventDateStr = dateMatch ? dateMatch[1].replace(/\s+from\s+/i, ', ') : '';
           const location = locationMatch ? locationMatch[1].trim() : '';
           const dateObj = Date.parse(eventDateStr);
 
-          console.log("Parsed Event:", { title, eventDateStr, location, dateObj });
+          console.log("Date Match:", dateMatch);
+          console.log("Location Match:", locationMatch);
+          console.log("eventDateStr:", eventDateStr);
+          console.log("Parsed dateObj:", dateObj);
 
           if (!title || isNaN(dateObj)) return;
 
