@@ -2,44 +2,50 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Upcoming Events</title>
+  <title>Events</title>
   <style>
-    body {
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 616px;
+      height: 960px;
       font-family: Arial, sans-serif;
       background-color: #f4f4f4;
       color: #222;
-      padding: 20px;
-      text-align: left; /* Force left alignment */
-    }
-    h2 {
+      overflow: hidden;
       text-align: left;
-      margin-bottom: 15px;
     }
+
+    #events {
+      padding: 10px 15px;
+      box-sizing: border-box;
+      overflow-y: auto;
+      height: 100%;
+    }
+
     .event {
       background: white;
-      padding: 10px 15px;
-      margin-bottom: 15px;
-      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      text-align: left;
     }
+
     .event h3 {
       margin: 0;
-      font-size: 1.2em;
+      font-size: 1.1em;
       color: #800000;
-      text-align: left;
     }
+
     .event time,
     .event .location {
       display: block;
-      margin-top: 5px;
+      margin-top: 4px;
       font-size: 0.95em;
-      text-align: left;
     }
   </style>
 </head>
 <body>
-  <h2>Upcoming Events</h2>
   <div id="events">Loading...</div>
 
   <script>
@@ -66,7 +72,7 @@
           const dtend = formatDateTime(dtendRaw);
 
           const startDateObj = parseDateTime(dtstartRaw);
-          if (startDateObj && startDateObj < new Date()) return; // filter past events
+          if (startDateObj && startDateObj < new Date()) return;
 
           events.push({ summary, location, dtstart, dtend });
         });
@@ -98,7 +104,7 @@
       const container = document.getElementById('events');
       container.innerHTML = '';
 
-      const upcoming = events.slice(0, 10); // Limit to 10 upcoming events
+      const upcoming = events.slice(0, 10);
 
       if (upcoming.length === 0) {
         container.innerHTML = '<p>No upcoming events found.</p>';
@@ -120,22 +126,14 @@
     function scheduleMidnightReload() {
       const now = new Date();
       const midnight = new Date();
-      midnight.setHours(24, 0, 0, 0); // Next midnight
+      midnight.setHours(24, 0, 0, 0);
       const msUntilMidnight = midnight.getTime() - now.getTime();
-
-      setTimeout(() => {
-        location.reload();
-      }, msUntilMidnight);
+      setTimeout(() => location.reload(), msUntilMidnight);
     }
 
-    // Initial load
     fetchICS();
-
-    // Refresh events every hour
-    setInterval(fetchICS, 60 * 60 * 1000);
-
-    // Reload full page at midnight
-    scheduleMidnightReload();
+    setInterval(fetchICS, 60 * 60 * 1000); // refresh every hour
+    scheduleMidnightReload(); // reload at midnight
   </script>
 </body>
 </html>
