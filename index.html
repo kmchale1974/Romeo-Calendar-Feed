@@ -51,7 +51,7 @@
   <script>
     async function fetchICS() {
       const baseICSUrl = 'https://www.romeoville.org/common/modules/iCalendar/iCalendar.aspx?catID=62,42,40,23,24,25,26,44,48,37,27,46,43,64,63,39,36,47,29,60,61,14,31,59,58,32,33,34,45,38&feed=calendar';
-      const proxiedUrl = 'https://kmchale1974.github.io/Romeo-Calendar-Feed/cors-proxy/' + baseICSUrl;
+      const proxiedUrl = 'https://amazing-sopapillas-b6d3e4.netlify.app/.netlify/functions/cors-proxy/' + baseICSUrl;
 
       try {
         const response = await fetch(proxiedUrl);
