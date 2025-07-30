@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Romeoville Events</title>
+  <title>Romeoville Events (RSS)</title>
   <style>
     html, body {
       margin: 0;
@@ -49,93 +49,60 @@
   <div id="events">Loading...</div>
 
   <script>
-    async function fetchICS() {
-      const baseICSUrl = 'https://www.romeoville.org/common/modules/iCalendar/iCalendar.aspx?catID=61&feed=calendar';
-      const proxiedUrl = 'https://amazing-sopapillas-b6d3e4.netlify.app/.netlify/functions/cors-proxy/' + baseICSUrl;
+    async function fetchRSS() {
+      const feedUrl = 'https://www.romeoville.org/RSSFeed.aspx?ModID=58&CID=All-calendar.xml';
+      const proxiedUrl = 'https://amazing-sopapillas-b6d3e4.netlify.app/.netlify/functions/cors-proxy/' + feedUrl;
 
       try {
         const response = await fetch(proxiedUrl);
-        const data = await response.text();
+        const text = await response.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, "text/xml");
 
+        const items = [...xml.querySelectorAll("item")];
         const events = [];
-        const entries = data.split('BEGIN:VEVENT').slice(1);
 
-        entries.forEach(entry => {
-          const summary = entry.match(/SUMMARY:(.*)/)?.[1]?.trim();
-          const location = entry.match(/LOCATION:(.*)/)?.[1]?.trim();
+        items.forEach(item => {
+          const title = item.querySelector("title")?.textContent.trim();
+          const description = item.querySelector("description")?.textContent.trim();
 
-          let dtstartRaw = entry.match(/DTSTART(;[^:]*)?:(.*)/);
-          let dtendRaw = entry.match(/DTEND(;[^:]*)?:(.*)/);
-          dtstartRaw = dtstartRaw ? dtstartRaw[2].trim() : null;
-          dtendRaw = dtendRaw ? dtendRaw[2].trim() : null;
+          const dateMatch = description.match(/Event date:\s*([^<]+)/i);
+          const locationMatch = description.match(/Location:\s*([^<]+)/i);
 
-          if (!summary || !dtstartRaw || !parseDateTime(dtstartRaw)) return;
+          const eventDateStr = dateMatch ? dateMatch[1].replace(/\s+from\s+/i, ', ') : '';
+          const location = locationMatch ? locationMatch[1].trim() : '';
 
-          const dtstart = formatDateTime(dtstartRaw);
-          const dtend = formatDateTime(dtendRaw);
+          const dateObj = Date.parse(eventDateStr);
+          if (!title || isNaN(dateObj)) return;
 
-          const startDateObj = parseDateTime(dtstartRaw);
-          if (startDateObj && startDateObj < new Date()) return;
+          const now = new Date();
+          if (new Date(dateObj) < now) return;
 
-          events.push({ summary, location, dtstart, dtend, rawStart: dtstartRaw });
+          events.push({ title, date: new Date(dateObj), dateStr: eventDateStr, location });
         });
 
-        events.sort((a, b) => parseDateTimeRaw(a.rawStart) - parseDateTimeRaw(b.rawStart));
-        displayEvents(events);
+        events.sort((a, b) => a.date - b.date);
+        displayEvents(events.slice(0, 10));
       } catch (err) {
-        document.getElementById('events').innerHTML = `<p>Error loading calendar: ${err.message}</p>`;
+        document.getElementById('events').innerHTML = `<p>Error loading RSS: ${err.message}</p>`;
       }
-    }
-
-    function parseDateTime(raw) {
-      if (!raw) return null;
-
-      if (/^\d{8}$/.test(raw)) {
-        const dt = new Date(`${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`);
-        return isNaN(dt) ? null : dt;
-      }
-
-      if (/^\d{8}T\d{6}Z?$/.test(raw)) {
-        const dtStr = raw.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?/, '$1-$2-$3T$4:$5:$6');
-        const dt = new Date(dtStr);
-        return isNaN(dt) ? null : dt;
-      }
-
-      const dt = new Date(raw);
-      return isNaN(dt) ? null : dt;
-    }
-
-    function parseDateTimeRaw(raw) {
-      const dt = parseDateTime(raw);
-      return dt ? dt.getTime() : 0;
-    }
-
-    function formatDateTime(raw) {
-      const dt = parseDateTime(raw);
-      if (!dt) return 'Invalid date';
-      return dt.toLocaleString(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short'
-      });
     }
 
     function displayEvents(events) {
       const container = document.getElementById('events');
       container.innerHTML = '';
 
-      const upcoming = events.slice(0, 10);
-
-      if (upcoming.length === 0) {
+      if (events.length === 0) {
         container.innerHTML = '<p>No upcoming events found.</p>';
         return;
       }
 
-      upcoming.forEach(evt => {
+      events.forEach(evt => {
         const div = document.createElement('div');
         div.className = 'event';
         div.innerHTML = `
-          <h3>${evt.summary}</h3>
-          <time>${evt.dtstart} – ${evt.dtend}</time>
+          <h3>${evt.title}</h3>
+          <time>${evt.dateStr}</time>
           <div class="location">${evt.location || ''}</div>
         `;
         container.appendChild(div);
@@ -146,12 +113,12 @@
       const now = new Date();
       const midnight = new Date();
       midnight.setHours(24, 0, 0, 0);
-      const msUntilMidnight = midnight.getTime() - now.getTime();
+      const msUntilMidnight = midnight - now;
       setTimeout(() => location.reload(), msUntilMidnight);
     }
 
-    fetchICS();
-    setInterval(fetchICS, 60 * 60 * 1000);
+    fetchRSS();
+    setInterval(fetchRSS, 60 * 60 * 1000);
     scheduleMidnightReload();
   </script>
 </body>
