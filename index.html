@@ -66,7 +66,10 @@
           const dtstartRaw = entry.match(/DTSTART.*:(.*)/)?.[1]?.trim();
           const dtendRaw = entry.match(/DTEND.*:(.*)/)?.[1]?.trim();
 
-          if (!summary || !dtstartRaw) return;
+          if (!summary || !dtstartRaw || !parseDateTime(dtstartRaw)) {
+            console.warn('Skipping invalid event:', summary, dtstartRaw);
+            return;
+          }
 
           const dtstart = formatDateTime(dtstartRaw);
           const dtend = formatDateTime(dtendRaw);
@@ -83,21 +86,30 @@
       }
     }
 
+    function parseDateTime(raw) {
+      if (!raw) return null;
+
+      if (/^\d{8}$/.test(raw)) {
+        const dt = new Date(`${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`);
+        return isNaN(dt) ? null : dt;
+      }
+
+      if (/^\d{8}T\d{6}Z?$/.test(raw)) {
+        const dtStr = raw.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?/, '$1-$2-$3T$4:$5:$6');
+        const dt = new Date(dtStr);
+        return isNaN(dt) ? null : dt;
+      }
+
+      return null;
+    }
+
     function formatDateTime(raw) {
       const dt = parseDateTime(raw);
+      if (!dt) return 'Invalid date';
       return dt.toLocaleString(undefined, {
         dateStyle: 'medium',
         timeStyle: 'short'
       });
-    }
-
-    function parseDateTime(raw) {
-      if (!raw) return null;
-      if (raw.length === 8) {
-        return new Date(`${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`);
-      } else {
-        return new Date(raw.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/, '$1-$2-$3T$4:$5'));
-      }
     }
 
     function displayEvents(events) {
@@ -132,8 +144,8 @@
     }
 
     fetchICS();
-    setInterval(fetchICS, 60 * 60 * 1000); // refresh every hour
-    scheduleMidnightReload(); // reload at midnight
+    setInterval(fetchICS, 60 * 60 * 1000);
+    scheduleMidnightReload();
   </script>
 </body>
 </html>
