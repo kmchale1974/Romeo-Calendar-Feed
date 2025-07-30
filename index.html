@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Romeoville Events (RSS)</title>
+  <title>Romeoville Events Debug</title>
   <style>
     html, body {
       margin: 0;
@@ -10,10 +10,9 @@
       width: 616px;
       height: 960px;
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      color: #222;
+      background-color: #fff;
+      color: #000;
       overflow: hidden;
-      text-align: left;
     }
 
     #events {
@@ -24,11 +23,11 @@
     }
 
     .event {
-      background: white;
+      background: #f0f0f0;
       padding: 10px;
       margin-bottom: 12px;
       border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .event h3 {
@@ -54,8 +53,10 @@
       const proxiedUrl = 'https://amazing-sopapillas-b6d3e4.netlify.app/.netlify/functions/cors-proxy/' + feedUrl;
 
       try {
+        console.log("Fetching:", proxiedUrl);
         const response = await fetch(proxiedUrl);
         const text = await response.text();
+        console.log("Raw RSS Response:", text.slice(0, 500) + "...");
         const parser = new DOMParser();
         const xml = parser.parseFromString(text, "text/xml");
 
@@ -71,8 +72,10 @@
 
           const eventDateStr = dateMatch ? dateMatch[1].replace(/\s+from\s+/i, ', ') : '';
           const location = locationMatch ? locationMatch[1].trim() : '';
-
           const dateObj = Date.parse(eventDateStr);
+
+          console.log("Parsed Event:", { title, eventDateStr, location, dateObj });
+
           if (!title || isNaN(dateObj)) return;
 
           const now = new Date();
@@ -84,6 +87,7 @@
         events.sort((a, b) => a.date - b.date);
         displayEvents(events.slice(0, 10));
       } catch (err) {
+        console.error("Error loading RSS:", err);
         document.getElementById('events').innerHTML = `<p>Error loading RSS: ${err.message}</p>`;
       }
     }
